@@ -71,15 +71,15 @@ kernel = torch.tensor([
     [0, 1, 0],
     [1, 0, 1]], dtype=torch.float)
 conv2d = new_conv2d_with_kernel(kernel)
-conv2d(input.view(1, 1, *input.shape)).type(torch.int)
+conv2d(input.view(1, 1, *input.shape))
 ```
 
 
 
 
-    tensor([[[[3, 2, 3],
-              [1, 3, 2],
-              [1, 2, 3]]]], dtype=torch.int32)
+    tensor([[[[4.0062, 3.0062, 4.0062],
+              [2.0062, 4.0062, 3.0062],
+              [2.0062, 3.0062, 4.0062]]]], grad_fn=<ConvolutionBackward0>)
 
 
 
@@ -100,9 +100,9 @@ conv2d(input.view(1, 1, *input.shape))
 
 
 
-    tensor([[[[ 13.0554,  20.0554,  17.0554],
-              [ 18.0554,  24.0554,  18.0554],
-              [-12.9446, -19.9446, -16.9446]]]], grad_fn=<ConvolutionBackward0>)
+    tensor([[[[ 13.0968,  20.0968,  17.0968],
+              [ 18.0968,  24.0968,  18.0968],
+              [-12.9032, -19.9032, -16.9032]]]], grad_fn=<ConvolutionBackward0>)
 
 
 
@@ -123,9 +123,9 @@ conv2d(input.view(1, 1, *input.shape))
 
 
 
-    tensor([[[[-13.1509, -20.1509, -17.1509],
-              [-18.1509, -24.1509, -18.1509],
-              [ 12.8491,  19.8491,  16.8491]]]], grad_fn=<ConvolutionBackward0>)
+    tensor([[[[-12.7119, -19.7119, -16.7119],
+              [-17.7119, -23.7119, -17.7119],
+              [ 13.2881,  20.2881,  17.2881]]]], grad_fn=<ConvolutionBackward0>)
 
 
 
