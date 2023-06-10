@@ -4,16 +4,19 @@
   <meta charset="utf-8">
   
   
-  <title>Xinglan&#39;s notes</title>
+  <title>Optional: let type system check your ideas | Xinglan&#39;s notes</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <meta name="description" content="Xinglan&#39;s personal blog">
-<meta property="og:type" content="website">
-<meta property="og:title" content="Xinglan&#39;s notes">
-<meta property="og:url" content="https://hereistheusername.github.io/index.html">
+  <meta name="description" content="This blog talks about one advantage of Optional&lt;&gt;. It’s nothing fancy and just warps up pieces of code into a new class. Here comes the question: why should I use it? I can do all on my own! The">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Optional: let type system check your ideas">
+<meta property="og:url" content="https://hereistheusername.github.io/2023/06/10/Optional-let-type-system-check-your-ideas/index.html">
 <meta property="og:site_name" content="Xinglan&#39;s notes">
-<meta property="og:description" content="Xinglan&#39;s personal blog">
+<meta property="og:description" content="This blog talks about one advantage of Optional&lt;&gt;. It’s nothing fancy and just warps up pieces of code into a new class. Here comes the question: why should I use it? I can do all on my own! The">
 <meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2023-06-10T02:45:38.000Z">
+<meta property="article:modified_time" content="2023-06-10T04:50:58.729Z">
 <meta property="article:author" content="Xinglan LIU">
+<meta property="article:tag" content="Optional&lt;&gt;">
 <meta name="twitter:card" content="summary">
   
     <link rel="alternate" href="/atom.xml" title="Xinglan's notes" type="application/atom+xml">
@@ -71,9 +74,7 @@
 </header>
 
       <div class="outer">
-        <section id="main">
-  
-    <article id="post-Optional-let-type-system-check-your-ideas" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+        <section id="main"><article id="post-Optional-let-type-system-check-your-ideas" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2023/06/10/Optional-let-type-system-check-your-ideas/" class="article-date">
   <time class="dt-published" datetime="2023-06-10T02:45:38.000Z" itemprop="datePublished">2023-06-10</time>
@@ -86,8 +87,8 @@
       <header class="article-header">
         
   
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2023/06/10/Optional-let-type-system-check-your-ideas/">Optional: let type system check your ideas</a>
+    <h1 class="p-name article-title" itemprop="headline name">
+      Optional: let type system check your ideas
     </h1>
   
 
@@ -132,105 +133,19 @@
     </footer>
   </div>
   
-</article>
-
-
-
+    
+<nav id="article-nav">
   
-    <article id="post-Convolution-in-Deep-Learning" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2023/03/17/Convolution-in-Deep-Learning/" class="article-date">
-  <time class="dt-published" datetime="2023-03-17T15:55:59.000Z" itemprop="datePublished">2023-03-17</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
   
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2023/03/17/Convolution-in-Deep-Learning/">Convolution in Deep Learning</a>
-    </h1>
+    <a href="/2023/03/17/Convolution-in-Deep-Learning/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Convolution in Deep Learning</div>
+    </a>
   
+</nav>
 
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="A-misunderstanding-about-convolution-in-deep-learning"><a href="#A-misunderstanding-about-convolution-in-deep-learning" class="headerlink" title="A misunderstanding about convolution in deep learning"></a>A misunderstanding about convolution in deep learning</h1><p>The definition of convolution in deep learning is somehow different from that in math or engineering.<br>Check this blog <a target="_blank" rel="noopener" href="http://www.songho.ca/dsp/convolution/convolution2d_example.html">http://www.songho.ca/dsp/convolution/convolution2d_example.html</a></p>
-<p>By this definition, before doing element wise product and traversing, we have to <strong>flip</strong> the kernel. However, it doesn’t work like this in deep learning.</p>
-<p>Let’s do an experiment in Pytorch.</p>
-<p>First, define a function to help us specify the kernel.</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> torch.nn <span class="keyword">as</span> nn</span><br></pre></td></tr></table></figure>
-
-
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">new_conv2d_with_kernel</span>(<span class="params">kernel: torch.tensor, **kwargs</span>) -&gt; nn.Conv2d:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    create a 2d convolutional layer with specified kernel for learning convolution operation in deep learning</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    :param kernel: one channel kernel</span></span><br><span class="line"><span class="string">    :param kwargs: named parameters passed to Conv2d</span></span><br><span class="line"><span class="string">    :return: a convolutional layer which can process 1 channel matrix for 1 batch</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    c = nn.Conv2d(<span class="number">1</span>, <span class="number">1</span>, kernel.shape, **kwargs)</span><br><span class="line">    p = nn.parameter.Parameter(kernel.view(<span class="number">1</span>, <span class="number">1</span>, *kernel.shape), requires_grad=<span class="literal">True</span>)    <span class="comment">#Only Tensors of floating point and complex dtype can require gradients</span></span><br><span class="line">    c.weight = p</span><br><span class="line">    <span class="keyword">return</span> c</span><br></pre></td></tr></table></figure>
-
-<p>see the outcomes.</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">new_conv2d_with_kernel(torch.tensor([[<span class="number">1</span>,<span class="number">1</span>], [<span class="number">0</span>, <span class="number">0</span>]], dtype=torch.<span class="built_in">float</span>)).weight</span><br></pre></td></tr></table></figure>
-
-
-
-
-<pre><code>Parameter containing:
-tensor([[[[1., 1.],
-          [0., 0.]]]], requires_grad=True)
-</code></pre>
-<p>So, lets try an example</p>
-<p><img src="https://miro.medium.com/v2/resize:fit:1052/1*GcI7G-JLAQiEoCON7xFbhg.gif" alt="cited example"></p>
-<p>cited from: <a target="_blank" rel="noopener" href="https://towardsdatascience.com/a-comprehensive-guide-to-convolutional-neural-networks-the-eli5-way-3bd2b1164a53">https://towardsdatascience.com/a-comprehensive-guide-to-convolutional-neural-networks-the-eli5-way-3bd2b1164a53</a></p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">input</span> = torch.tensor([</span><br><span class="line">    [<span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>],</span><br><span class="line">    [<span class="number">0</span>, <span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>, <span class="number">0</span>],</span><br><span class="line">    [<span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>],</span><br><span class="line">    [<span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">1</span>, <span class="number">0</span>],</span><br><span class="line">    [<span class="number">0</span>, <span class="number">1</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>]], dtype=torch.<span class="built_in">float</span>)</span><br><span class="line">kernel = torch.tensor([</span><br><span class="line">    [<span class="number">1</span>, <span class="number">0</span>, <span class="number">1</span>],</span><br><span class="line">    [<span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>],</span><br><span class="line">    [<span class="number">1</span>, <span class="number">0</span>, <span class="number">1</span>]], dtype=torch.<span class="built_in">float</span>)</span><br><span class="line">conv2d = new_conv2d_with_kernel(kernel)</span><br><span class="line">conv2d(<span class="built_in">input</span>.view(<span class="number">1</span>, <span class="number">1</span>, *<span class="built_in">input</span>.shape))</span><br></pre></td></tr></table></figure>
-
-
-
-
-<pre><code>tensor([[[[4.0062, 3.0062, 4.0062],
-          [2.0062, 4.0062, 3.0062],
-          [2.0062, 3.0062, 4.0062]]]], grad_fn=&lt;ConvolutionBackward0&gt;)
-</code></pre>
-<p>Let’s try another example in a mathematical background.<br><a target="_blank" rel="noopener" href="http://www.songho.ca/dsp/convolution/convolution2d_example.html">http://www.songho.ca/dsp/convolution/convolution2d_example.html</a></p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">input</span> = torch.arange(<span class="number">1</span>, <span class="number">10</span>).reshape(<span class="number">3</span>, <span class="number">3</span>).<span class="built_in">type</span>(torch.<span class="built_in">float</span>)</span><br><span class="line">kernel = torch.tensor([</span><br><span class="line">    [-<span class="number">1</span>, -<span class="number">2</span>, -<span class="number">1</span>],</span><br><span class="line">    [<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>],</span><br><span class="line">    [<span class="number">1</span>, <span class="number">2</span>, <span class="number">1</span>]], dtype=torch.<span class="built_in">float</span>)</span><br><span class="line">conv2d = new_conv2d_with_kernel(kernel, padding=<span class="number">1</span>)</span><br><span class="line">conv2d(<span class="built_in">input</span>.view(<span class="number">1</span>, <span class="number">1</span>, *<span class="built_in">input</span>.shape))</span><br></pre></td></tr></table></figure>
-
-
-
-
-<pre><code>tensor([[[[ 13.0968,  20.0968,  17.0968],
-          [ 18.0968,  24.0968,  18.0968],
-          [-12.9032, -19.9032, -16.9032]]]], grad_fn=&lt;ConvolutionBackward0&gt;)
-</code></pre>
-<p>The output is different from the example in this blog.</p>
-<p>Try what gonna happen if we flip the kernel. (flipping should happen on each axis!)</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">flipped_kernel = torch.tensor([</span><br><span class="line">    [<span class="number">1</span>, <span class="number">2</span>, <span class="number">1</span>],</span><br><span class="line">    [<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>],</span><br><span class="line">    [-<span class="number">1</span>, -<span class="number">2</span>, -<span class="number">1</span>]], dtype=torch.<span class="built_in">float</span>)</span><br><span class="line">conv2d = new_conv2d_with_kernel(flipped_kernel, padding=<span class="number">1</span>)</span><br><span class="line">conv2d(<span class="built_in">input</span>.view(<span class="number">1</span>, <span class="number">1</span>, *<span class="built_in">input</span>.shape))</span><br></pre></td></tr></table></figure>
-
-
-
-
-<pre><code>tensor([[[[-12.7119, -19.7119, -16.7119],
-          [-17.7119, -23.7119, -17.7119],
-          [ 13.2881,  20.2881,  17.2881]]]], grad_fn=&lt;ConvolutionBackward0&gt;)
-</code></pre>
-<p>This time the output matches the example. And you can check this <a target="_blank" rel="noopener" href="https://cs.stackexchange.com/questions/11591/2d-convolution-flipping-the-kernel">post</a> to see the consequence of misusing.</p>
-<h1 id="Conclusion"><a href="#Conclusion" class="headerlink" title="Conclusion"></a>Conclusion</h1><p>Concepts in different subjects may share the same name but with different definitions. Be careful with that.</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://hereistheusername.github.io/2023/03/17/Convolution-in-Deep-Learning/" data-id="clipishnr0000e5mmfs2j6fs4" data-title="Convolution in Deep Learning" class="article-share-link">Share</a>
-      
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/conv2d-convolution-in-deep-learning/" rel="tag">conv2d, convolution in deep learning</a></li></ul>
-
-    </footer>
-  </div>
   
 </article>
-
-
-
-  
 
 
 </section>
