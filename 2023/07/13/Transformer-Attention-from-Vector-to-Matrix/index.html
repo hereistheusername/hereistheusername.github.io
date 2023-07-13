@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"hereistheusername.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="There are two ways to calculate the attention in transformer: one is $\text{Attention(Q, K, V)}&#x3D;\text{softmax}(\frac{QK^T}{\sqrt{d_k}})\times V$ same as in Attention Is All You Need, the other is">
+<meta property="og:type" content="article">
+<meta property="og:title" content=" Scaled Dot-Product Attention: from Vector to Matrix">
+<meta property="og:url" content="https://hereistheusername.github.io/2023/07/13/Transformer-Attention-from-Vector-to-Matrix/index.html">
+<meta property="og:site_name" content="Xinglan&#39;s notes">
+<meta property="og:description" content="There are two ways to calculate the attention in transformer: one is $\text{Attention(Q, K, V)}&#x3D;\text{softmax}(\frac{QK^T}{\sqrt{d_k}})\times V$ same as in Attention Is All You Need, the other is">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://jalammar.github.io/images/t/self-attention-output.png">
+<meta property="og:image" content="https://machinelearningmastery.com/wp-content/uploads/2021/09/tour_3.png">
+<meta property="og:image" content="https://jalammar.github.io/images/t/self-attention-matrix-calculation.png">
+<meta property="og:image" content="https://jalammar.github.io/images/t/self-attention-matrix-calculation-2.png">
+<meta property="article:published_time" content="2023-07-13T05:52:36.000Z">
+<meta property="article:modified_time" content="2023-07-13T14:19:22.245Z">
+<meta property="article:author" content="Xinglan LIU">
+<meta property="article:tag" content="Transformer, Attention">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jalammar.github.io/images/t/self-attention-output.png">
+
+<link rel="canonical" href="https://hereistheusername.github.io/2023/07/13/Transformer-Attention-from-Vector-to-Matrix/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+  <title> Scaled Dot-Product Attention: from Vector to Matrix | Xinglan's notes</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Xinglan's notes</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://hereistheusername.github.io/2023/07/13/Transformer-Attention-from-Vector-to-Matrix/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Xinglan LIU">
+      <meta itemprop="description" content="Xinglan's personal blog">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Xinglan's notes">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+           Scaled Dot-Product Attention: from Vector to Matrix
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+              
+
+              <time title="Created: 2023-07-13 13:52:36 / Modified: 22:19:22" itemprop="dateCreated datePublished" datetime="2023-07-13T13:52:36+08:00">2023-07-13</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>There are two ways to calculate the attention in transformer: one is $\text{Attention(Q, K, V)}&#x3D;\text{softmax}(\frac{QK^T}{\sqrt{d_k}})\times V$ same as in <strong>Attention Is All You Need</strong>, the other is $\text{Attention(Q, K, V)}&#x3D;V \times\text{softmax}(\frac{K^TQ}{\sqrt{d_k}})$ from <a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/340149804">here</a>. Depending on different context, both are correct. The key point is How You Organize the Input.</p>
+<p>I manage to go over the vector version of the attention and then derive the matrix form.</p>
+<h1 id="Vector-Version"><a href="#Vector-Version" class="headerlink" title="Vector Version"></a>Vector Version</h1><p>The aim of the attention mechanism is to map a query and a set of key-value pairs to an output.</p>
+<p>Suppose we have sets of vectors: input $x$, query, key, and value with dimensions $d_p$, $d_q$, $d_k$, and $d_v$ respectively, where $d_q &#x3D; d_k$ For each input $x_i$, there are corresponding $q_i$, $k_i$, and $v_i$.</p>
+<p>Denote</p>
+<p>$$<br>    a_{1, i} &#x3D; \frac{q_1 \cdot k_i}{\sqrt{d_k}} \text{, where }i&#x3D;1, 2, \dots<br>$$</p>
+<p>What $a_{1, i}$ means is a vector of products between the input $x_1$ and other keys. The name, scaled dot-product, is from dividing $\sqrt{d_k}$. It’s introduced to tackle the problem made by magnitude in computation, and also can be checked in <a target="_blank" rel="noopener" href="https://arxiv.org/pdf/1706.03762.pdf">the article</a>.</p>
+<p>Then, the output 1 is</p>
+<p>$$<br>    \begin{align*}<br>        o_1 &amp;&#x3D; \sum_i \hat{a_{1, i}} \cdot v_i &amp;\text{where } \hat{a_{1, i}} &#x3D; \text{softmax}(a_{1, i}), i&#x3D;1, 2, \dots<br>    \end{align*}<br>$$</p>
+<p>The softmax function converts a vector of numbers into a vector of probabilities [<a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Softmax_function">wiki</a>], and the outcome 1 is the sum of the scalar multiplications of the scalar $\hat{a_1, i}$ and the vector $v_i$.</p>
+<p>Usually, the result of the attention function has the same shape of the input.</p>
+<p><img src="https://jalammar.github.io/images/t/self-attention-output.png" alt="an example for reference"></p>
+<h1 id="Matrix-Version"><a href="#Matrix-Version" class="headerlink" title="Matrix Version"></a>Matrix Version</h1><p>Different from the vector version, there is one more step before the attention calculation for the matrix version. The query, key and value are not given directly, but they are computed from matrices $W^Q$, $W^k$, and $W^v$.</p>
+<p>Suppose we have the input with shape $[n, p]$. The weight matrices are going to be $[p, d_q]$, $[p, d_k]$, and $[p, d_v]$. $n$ is just the number of inputs, or in another words, the batch size.</p>
+<p>Then,</p>
+<p>$$<br>   Q: [n, d_q]<br>$$<br>$$    K: [n, d_k]<br>$$</p>
+<p>$$    V: [n, d_v]<br>$$</p>
+<p>Since each row of Q has to multiply each row in K, we can transpose the K and make a matrix multiplication $Q \cdot K^T$. The result is a $n \times n$ matrix, each row is the result corresponding to the vector version. For example, in the first row there are elements $a_{1, 1}, a_{1, 2}, \dots, a_{1, i},$.</p>
+<p>$$<br>    \begin{pmatrix}<br>\alpha_{1, 1}&#x3D;q^1\cdot k^1  &amp; \alpha_{1, 2}&#x3D;q^1\cdot k^2  &amp; \cdots &amp; \alpha_{1, i}&#x3D;q^1\cdot k^k \\<br>\vdots &amp; \alpha_{2,2} &amp; \cdots  &amp; \vdots \\<br>\alpha_{n, 1} &amp; \cdots &amp; \cdots  &amp; \alpha_{n,i}<br>\end{pmatrix}<br>$$</p>
+<p>Dividing $\sqrt{d_k}$ and applying softmax function do not change the shape of this $n \times n$ matrix, so we are going to multiply V with a $n \times n$ matrix.</p>
+<p>Please pay attention (pun),</p>
+<p>$$<br>    \begin{align*}<br>        o_1 &amp;&#x3D;\sum_{i}\hat{a}_{1,i}v_i \\<br>        &amp;&#x3D; \hat{a}_{1,1}v_1 + \hat{a}_{1,2}v_2 + \cdots + \hat{a}_{1,i}v_i \\<br>        &amp;&#x3D; \begin{pmatrix}<br>        v_1 &amp; v_2 &amp; \dots &amp; v_i<br>        \end{pmatrix} \begin{pmatrix}<br>        \hat{a}_{1,1} \\<br>        \hat{a}_{1,2} \\<br>        \vdots \\<br>        \hat{a}_{1,i}<br>        \end{pmatrix} \\<br>        &amp;&#x3D; \begin{pmatrix}<br>        \hat{a}_{1,1} &amp; \hat{a}_{1,2} &amp; \cdots &amp; \hat{a}_{1,i}<br>        \end{pmatrix}\begin{pmatrix}<br>        v1 \\ v2 \\ \vdots \\ v_i<br>        \end{pmatrix}<br>    \end{align*}<br>$$</p>
+<p>any $\hat{a}$ is a scalar, but any v is a vector.</p>
+<p>Therefore, we can have</p>
+<p>$$<br>    \begin{align*}<br>        \text{Attention(Q, K, V)}&amp;&#x3D;\text{softmax}(\frac{QK^T}{\sqrt{d_k}})\times V\\<br>        &amp;&#x3D;\text{softmax}(\frac{QK^T}{\sqrt{d_k}})\times \begin{pmatrix}<br>v1 \\ v2 \\ \vdots \\ v_i<br>\end{pmatrix}.<br>    \end{align*}<br>$$</p>
+<p>This is exactly what this figure is doing(Adding a mask is optional).</p>
+<p><img src="https://machinelearningmastery.com/wp-content/uploads/2021/09/tour_3.png" alt="scaled dot-product attention"></p>
+<p><a target="_blank" rel="noopener" href="https://jalammar.github.io/illustrated-transformer/">Jay’s figures</a> perfectly express shapes of matrices in calculation.<br><img src="https://jalammar.github.io/images/t/self-attention-matrix-calculation.png" alt="computing Q, V, K"><br><img src="https://jalammar.github.io/images/t/self-attention-matrix-calculation-2.png" alt="computing attention"></p>
+<h1 id="the-other-Formula"><a href="#the-other-Formula" class="headerlink" title="the other Formula"></a>the other Formula</h1><p>However, the matrix multiplication isn’t invertable like scalar multipication. The formula above cannot give the anticipant results, if we cancate vectors of inputs colomn by column into a matrix. In this situation, we have to also transpose the Q, K, V matrices and use the second formula.</p>
+<p>$$<br>\text{Attention(Q, K, V)}&#x3D;V \times\text{softmax}(\frac{K^TQ}{\sqrt{d_k}})<br>$$</p>
+<h1 id="Conclusion"><a href="#Conclusion" class="headerlink" title="Conclusion"></a>Conclusion</h1><p>Understanding the vector version can help to choose the right formula. Most of the case, we use $\text{Attention(Q, K, V)}&#x3D;\text{softmax}(\frac{QK^T}{\sqrt{d_k}})\times V$, such as in PyTorch. But be careful, if the input is a $[p, n]$ matrix.</p>
+<h1 id="Code"><a href="#Code" class="headerlink" title="Code"></a>Code</h1><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">compute_QKV</span>(<span class="params">embedding: torch.Tensor,</span></span><br><span class="line"><span class="params">                Wq: torch.Tensor,</span></span><br><span class="line"><span class="params">                Wk: torch.Tensor,</span></span><br><span class="line"><span class="params">                Wv: torch.Tensor</span>) -&gt; typing.<span class="type">Tuple</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    compute Q, V, K matrices by embedding and weights</span></span><br><span class="line"><span class="string">    :param embedding: shape [n, p]</span></span><br><span class="line"><span class="string">    :param Wq: shape [p, d_k]</span></span><br><span class="line"><span class="string">    :param Wv: shape [p, d_v]</span></span><br><span class="line"><span class="string">    :param Wk: shape [p, d_k]</span></span><br><span class="line"><span class="string">    :return: Tuple[Q, V, K]</span></span><br><span class="line"><span class="string">    where Q: shape [n, d_k]</span></span><br><span class="line"><span class="string">    where K: shape [n, d_k]</span></span><br><span class="line"><span class="string">    where V: shape [n, d_v]</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> torch.matmul(embedding, Wq), torch.matmul(embedding, Wk), torch.matmul(embedding, Wv)</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">scaled_dot_product</span>(<span class="params">Q: torch.Tensor,</span></span><br><span class="line"><span class="params">                       K: torch.Tensor</span>) -&gt; torch.Tensor:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    :param Q: shape [n, d_k]</span></span><br><span class="line"><span class="string">    :param K: shape [n, d_k]</span></span><br><span class="line"><span class="string">    :return: Tensor shape [n, n]</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    dk = K.shape[<span class="number">1</span>]</span><br><span class="line">    <span class="keyword">return</span> torch.matmul(Q, K.T) / torch.sqrt(torch.tensor(dk))</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">attention</span>(<span class="params">A: torch.Tensor,</span></span><br><span class="line"><span class="params">              V: torch.Tensor</span>) -&gt; torch.Tensor:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    :param A: shape [n, n]</span></span><br><span class="line"><span class="string">    :param V: shape [n, d_v]</span></span><br><span class="line"><span class="string">    :return: Tensor with shape [n, d_v]</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    A_prime = torch.softmax(A, dim=<span class="number">1</span>)</span><br><span class="line">    <span class="keyword">assert</span> <span class="number">0.9</span> &lt; A_prime[<span class="number">0</span>].<span class="built_in">sum</span>() &lt; <span class="number">1.1</span>   <span class="comment"># do softmax row by row</span></span><br><span class="line">    <span class="keyword">return</span> torch.matmul(A_prime, V)</span><br></pre></td></tr></table></figure>
+
+<p>Example</p>
+<h2 id="Done-by-the-first-approach"><a href="#Done-by-the-first-approach" class="headerlink" title="Done by the first approach"></a>Done by the first approach</h2><p>$$<br>\text{Attention(Q, K, V)}&#x3D;\text{softmax}(\frac{QK^T}{\sqrt{d_k}})\times V<br>$$</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">embeddings = torch.tensor([</span><br><span class="line">    [<span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>, <span class="number">0</span>],</span><br><span class="line">    [<span class="number">1</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="number">0</span>],</span><br><span class="line">    [<span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">1</span>],</span><br><span class="line">    [<span class="number">0</span>, <span class="number">1</span>, <span class="number">1</span>, <span class="number">0</span>]</span><br><span class="line">])</span><br><span class="line">Wq = torch.tensor([</span><br><span class="line">    [<span class="number">1</span>, <span class="number">0</span>, <span class="number">1</span>],</span><br><span class="line">    [<span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>],</span><br><span class="line">    [<span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>],</span><br><span class="line">    [<span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>]</span><br><span class="line">])</span><br><span class="line">Wk = torch.tensor([</span><br><span class="line">    [<span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>],</span><br><span class="line">    [<span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>],</span><br><span class="line">    [<span class="number">1</span>, <span class="number">0</span>, <span class="number">1</span>],</span><br><span class="line">    [<span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>]</span><br><span class="line">])</span><br><span class="line">Wv = torch.tensor([</span><br><span class="line">    [<span class="number">1</span>, <span class="number">2</span>, <span class="number">0</span>],</span><br><span class="line">    [<span class="number">1</span>, <span class="number">3</span>, <span class="number">1</span>],</span><br><span class="line">    [<span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>],</span><br><span class="line">    [<span class="number">1</span>, <span class="number">1</span>, <span class="number">0</span>]</span><br><span class="line">])</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Q, K, V = compute_QKV(embeddings, Wq, Wk, Wv)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">A = scaled_dot_product(Q, K)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">Aprime = torch.softmax(A, dim=1)</span><br><span class="line">torch.matmul(Aprime, V.type(torch.float))</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<pre><code>tensor([[3.9492, 7.8588, 3.9577],
+        [3.9924, 7.9784, 3.9934],
+        [3.8407, 7.5669, 3.8595],
+        [3.7902, 7.4482, 3.8228]])
+</code></pre>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">attention(A.<span class="built_in">type</span>(torch.<span class="built_in">float</span>), V.<span class="built_in">type</span>(torch.<span class="built_in">float</span>))</span><br></pre></td></tr></table></figure>
+
+
+
+
+<pre><code>tensor([[3.9492, 7.8588, 3.9577],
+        [3.9924, 7.9784, 3.9934],
+        [3.8407, 7.5669, 3.8595],
+        [3.7902, 7.4482, 3.8228]])
+</code></pre>
+<h2 id="Done-by-the-second-approach"><a href="#Done-by-the-second-approach" class="headerlink" title="Done by the second approach"></a>Done by the second approach</h2><p>$$<br>\text{Attention(Q, K, V)}&#x3D;V \times\text{softmax}(\frac{K^TQ}{\sqrt{d_k}})<br>$$</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">compute_QKV2</span>(<span class="params">embedding: torch.Tensor,</span></span><br><span class="line"><span class="params">                Wq: torch.Tensor,</span></span><br><span class="line"><span class="params">                Wk: torch.Tensor,</span></span><br><span class="line"><span class="params">                Wv: torch.Tensor</span>) -&gt; typing.<span class="type">Tuple</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    compute Q, V, K matrices by embedding and weights</span></span><br><span class="line"><span class="string">    :param embedding: shape [p, n]</span></span><br><span class="line"><span class="string">    :param Wq: shape [d_k, p]</span></span><br><span class="line"><span class="string">    :param Wv: shape [d_v, p]</span></span><br><span class="line"><span class="string">    :param Wk: shape [d_k, p]</span></span><br><span class="line"><span class="string">    :return: Tuple[Q, V, K]</span></span><br><span class="line"><span class="string">    where Q: shape [d_k, n]</span></span><br><span class="line"><span class="string">    where K: shape [d_k, n]</span></span><br><span class="line"><span class="string">    where V: shape [d_v, n]</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> torch.matmul(Wq, embedding), torch.matmul(Wk, embedding), torch.matmul(Wv, embedding)</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">scaled_dot_product2</span>(<span class="params">Q: torch.Tensor,</span></span><br><span class="line"><span class="params">                       K: torch.Tensor</span>) -&gt; torch.Tensor:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    :param Q: shape [d_k, n]</span></span><br><span class="line"><span class="string">    :param K: shape [d_k, n]</span></span><br><span class="line"><span class="string">    :return: Tensor shape [n, n]</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    dk = K.shape[<span class="number">0</span>]</span><br><span class="line">    <span class="keyword">return</span> torch.matmul(K.T, Q) / torch.sqrt(torch.tensor(dk))</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">attention2</span>(<span class="params">A: torch.Tensor,</span></span><br><span class="line"><span class="params">              V: torch.Tensor</span>) -&gt; torch.Tensor:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    :param A: shape [n, n]</span></span><br><span class="line"><span class="string">    :param V: shape [d_v, n]</span></span><br><span class="line"><span class="string">    :return: Tensor with shape [d_v, n]</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    A_prime = torch.softmax(A, dim=<span class="number">0</span>)</span><br><span class="line">    <span class="keyword">assert</span> <span class="number">0.9</span> &lt; A_prime[:, <span class="number">0</span>].<span class="built_in">sum</span>() &lt; <span class="number">1.1</span>   <span class="comment"># do softmax column by column</span></span><br><span class="line">    <span class="keyword">return</span> torch.matmul(V, A_prime)</span><br></pre></td></tr></table></figure>
+
+<p>Following the resoning above, if we transpose the input and weight matrices of Q, K, and V, the result should be the same.</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Q2, K2, V2 = compute_QKV2(embeddings.T, Wq.T, Wk.T, Wv.T)</span><br><span class="line">A2 = scaled_dot_product2(Q2, K2)</span><br><span class="line"><span class="comment"># transpose the result making it more readable</span></span><br><span class="line">attention2(A2.<span class="built_in">type</span>(torch.<span class="built_in">float</span>), V2.<span class="built_in">type</span>(torch.<span class="built_in">float</span>)).T</span><br></pre></td></tr></table></figure>
+
+
+
+
+<pre><code>tensor([[3.9492, 7.8588, 3.9577],
+        [3.9924, 7.9784, 3.9934],
+        [3.8407, 7.5669, 3.8595],
+        [3.7902, 7.4482, 3.8228]])
+</code></pre>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Transformer-Attention/" rel="tag"># Transformer, Attention</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2023/06/10/Optional-let-type-system-check-your-ideas/" rel="prev" title="Optional: let type system check your ideas">
+      <i class="fa fa-chevron-left"></i> Optional: let type system check your ideas
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Vector-Version"><span class="nav-number">1.</span> <span class="nav-text">Vector Version</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Matrix-Version"><span class="nav-number">2.</span> <span class="nav-text">Matrix Version</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#the-other-Formula"><span class="nav-number">3.</span> <span class="nav-text">the other Formula</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Conclusion"><span class="nav-number">4.</span> <span class="nav-text">Conclusion</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Code"><span class="nav-number">5.</span> <span class="nav-text">Code</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Done-by-the-first-approach"><span class="nav-number">5.1.</span> <span class="nav-text">Done by the first approach</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Done-by-the-second-approach"><span class="nav-number">5.2.</span> <span class="nav-text">Done by the second approach</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Xinglan LIU</p>
+  <div class="site-description" itemprop="description">Xinglan's personal blog</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">3</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">tags</span>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Xinglan LIU</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>
